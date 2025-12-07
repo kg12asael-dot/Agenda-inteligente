@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Calificaciones de tareas</h2>
+
+<table border="1" id="tabla-notas">
+  <thead>
+    <tr>
+      <th>Alumno</th>
+      <th>Tarea</th>
+      <th>Fecha</th>
+      <th>Calificación (1-10)</th>
+      <th>Comentario</th>
+      <th>Acción</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+async function cargarTabla() {
+  const [resAlumnos, resTareas] = await Promise.all([
+    fetch("/api/alumnos"),
+    fetch("/api/tareas")
+  ]);
+  const alumnos = await resAlumnos.json();
+  const tareas = await resTareas.json();
+
+  // Opcional: obtener notas existentes para precargar campos
+  const resNotas = await fetch("/api/notas");
+  const notas = await resNotas.json();
+  const indexNotas = {};
+  notas.forEach(n => {
+    indexNotas[`${n.alumno_id}-${n.tarea_id}`] = { valor: n.valor || "", comentario: n.comentario || "", id: n.id };
+  });
+
+  let html = "";
+  alumnos.forEach(a => {
+    tareas.forEach(t => {
+      const key = `${a.id}-${t.id}`;
+      const precal = indexNotas[key]?.valor || "";
+      const precom = indexNotas[key]?.comentario || "";
+      const notaId = indexNotas[key]?.id || "";
+      html += `
+        <tr>
+          <td>${a.nombre}</td>
+          <td>${t.titulo}</td>
+          <td>${t.fecha || ""}</td>
+          <td><input type="number" min="1" max="10" id="nota-${a.id}-${t.id}" value="${precal}"></td>
+          <td><input type="text" id="coment-${a.id}-${t.id}" value="${precom}" placeholder="Comentario"></td>
+          <td>
+            <button onclick="guardarNota('${a.id}','${t.id}')">Guardar</button>
+            ${notaId ? `<button onclick="eliminarNota('${notaId}')">Eliminar</button>` : ``}
+          </td>
+        </tr>
+      `;
+    });
+  });
+  document.querySelector("#tabla-notas tbody").innerHTML = html;
+}
+
+async function guardarNota(alumno_id, tarea_id) {
+  const valor = document.getElementById(`nota-${alumno_id}-${tarea_id}`).value;
+  const comentario = document.getElementById(`coment-${alumno_id}-${tarea_id}`).value;
+  if (!valor || valor < 1 || valor > 10) {
+    alert("Ingresa una calificación entre 1 y 10.");
+    return;
+  }
+  const res = await fetch("/api/notas", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alumno_id, tarea_id, valor, comentario })
+  });
+  const data = await res.json();
+  alert(data.error ? data.error : "Nota guardada");
+  cargarTabla();
+}
+
+async function eliminarNota(id) {
+  if (!confirm("¿Eliminar esta nota?")) return;
+  const res = await fetch(`/api/notas/${id}`, { method: "DELETE" });
+  const data = await res.json();
+  alert(data.error ? data.error : "Nota eliminada");
+  cargarTabla();
+}
+
+window.onload = cargarTabla;
+</script>
+{% endblock %}

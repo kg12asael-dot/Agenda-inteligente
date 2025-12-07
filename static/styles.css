@@ -1,0 +1,45 @@
+body {
+    background: #f4f9f4;
+    font-family: Arial;
+}
+
+.navbar {
+    background: #b6d7a8;
+    padding: 12px;
+    display: flex;
+    gap: 20px;
+}
+
+.navbar a {
+    color: #355e3b;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.container {
+    padding: 20px;
+    background: white;
+    margin: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px #ddd;
+}
+
+button {
+    background: #ffd966;
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+ul {
+    margin-top: 15px;
+}
+
+li {
+    background: #d9ead3;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+}

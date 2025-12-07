@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Eventos</h2>
+
+<div>
+  <h3>Selecciona alumnos</h3>
+  <div id="alumnos-list"></div>
+  <label><input type="checkbox" id="todos"> Asignar a todos</label>
+</div>
+
+<div>
+  <input id="titulo" placeholder="Título">
+  <input id="fecha" type="date">
+  <button onclick="agregarEvento()">Agregar evento</button>
+</div>
+
+<h3>Listado</h3>
+<table border="1" id="tabla-eventos">
+  <thead>
+    <tr>
+      <th>Título</th>
+      <th>Fecha</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+async function cargarAlumnos() {
+  const res = await fetch("/api/alumnos");
+  const alumnos = await res.json();
+  document.getElementById("alumnos-list").innerHTML =
+    alumnos.map(a => `<label><input type="checkbox" name="alumno" value="${a.id}">${a.nombre}</label>`).join("<br>");
+}
+
+function seleccionados() {
+  return Array.from(document.querySelectorAll('input[name="alumno"]:checked')).map(el => el.value);
+}
+
+async function agregarEvento() {
+  const body = {
+    titulo: document.getElementById("titulo").value,
+    fecha: document.getElementById("fecha").value,
+    alumno_ids: seleccionados(),
+    all: document.getElementById("todos").checked
+  };
+  const res = await fetch("/api/eventos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  alert(data.error ? data.error : "Evento creado");
+  cargarEventos();
+}
+
+async function cargarEventos() {
+  const res = await fetch("/api/eventos");
+  const eventos = await res.json();
+  document.querySelector("#tabla-eventos tbody").innerHTML =
+    eventos.map(e => `
+      <tr>
+        <td><input value="${e.titulo}" id="e-${e.id}-titulo"></td>
+        <td><input type="date" value="${e.fecha || ''}" id="e-${e.id}-fecha"></td>
+        <td>
+          <button onclick="editarEvento('${e.id}')">Guardar</button>
+          <button onclick="eliminarEvento('${e.id}')">Eliminar</button>
+        </td>
+      </tr>
+    `).join("");
+}
+
+async function editarEvento(id) {
+  const body = {
+    titulo: document.getElementById(`e-${id}-titulo`).value,
+    fecha: document.getElementById(`e-${id}-fecha`).value
+  };
+  const res = await fetch(`/api/eventos/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  alert(data.error ? data.error : "Evento actualizado");
+  cargarEventos();
+}
+
+async function eliminarEvento(id) {
+  if (!confirm("¿Eliminar este evento?")) return;
+  const res = await fetch(`/api/eventos/${id}`, { method: "DELETE" });
+  const data = await res.json();
+  alert(data.error ? data.error : "Evento eliminado");
+  cargarEventos();
+}
+
+window.onload = () => { cargarAlumnos(); cargarEventos(); };
+</script>
+{% endblock %}

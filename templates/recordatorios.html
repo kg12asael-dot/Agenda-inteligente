@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Recordatorios</h2>
+
+<div>
+  <h3>Selecciona alumnos</h3>
+  <div id="alumnos-list"></div>
+  <label><input type="checkbox" id="todos"> Asignar a todos</label>
+</div>
+
+<div>
+  <input id="titulo" placeholder="Título">
+  <textarea id="descripcion" placeholder="Descripción (opcional)"></textarea>
+  <button onclick="agregarRecordatorio()">Agregar recordatorio</button>
+</div>
+
+<h3>Listado</h3>
+<table border="1" id="tabla-recordatorios">
+  <thead>
+    <tr>
+      <th>Título</th>
+      <th>Descripción</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+async function cargarAlumnos() {
+  const res = await fetch("/api/alumnos");
+  const alumnos = await res.json();
+  document.getElementById("alumnos-list").innerHTML =
+    alumnos.map(a => `<label><input type="checkbox" name="alumno" value="${a.id}">${a.nombre}</label>`).join("<br>");
+}
+
+function seleccionados() {
+  return Array.from(document.querySelectorAll('input[name="alumno"]:checked')).map(el => el.value);
+}
+
+async function agregarRecordatorio() {
+  const body = {
+    titulo: document.getElementById("titulo").value,
+    descripcion: document.getElementById("descripcion").value,
+    alumno_ids: seleccionados(),
+    all: document.getElementById("todos").checked
+  };
+  const res = await fetch("/api/recordatorios", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  alert(data.error ? data.error : "Recordatorio creado");
+  cargarRecordatorios();
+}
+
+async function cargarRecordatorios() {
+  const res = await fetch("/api/recordatorios");
+  const recs = await res.json();
+  document.querySelector("#tabla-recordatorios tbody").innerHTML =
+    recs.map(r => `
+      <tr>
+        <td><input value="${r.titulo}" id="r-${r.id}-titulo"></td>
+        <td><textarea id="r-${r.id}-desc">${r.descripcion || ''}</textarea></td>
+        <td>
+          <button onclick="editarRecordatorio('${r.id}')">Guardar</button>
+          <button onclick="eliminarRecordatorio('${r.id}')">Eliminar</button>
+        </td>
+      </tr>
+    `).join("");
+}
+
+async function editarRecordatorio(id) {
+  const body = {
+    titulo: document.getElementById(`r-${id}-titulo`).value,
+    descripcion: document.getElementById(`r-${id}-desc`).value
+  };
+  const res = await fetch(`/api/recordatorios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  alert(data.error ? data.error : "Recordatorio actualizado");
+  cargarRecordatorios();
+}
+
+async function eliminarRecordatorio(id) {
+  if (!confirm("¿Eliminar este recordatorio?")) return;
+  const res = await fetch(`/api/recordatorios/${id}`, { method: "DELETE" });
+  const data = await res.json();
+  alert(data.error ? data.error : "Recordatorio eliminado");
+  cargarRecordatorios();
+}
+
+window.onload = () => { cargarAlumnos(); cargarRecordatorios(); };
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Alumnos Registrados</h2>
+
+<ul id="lista-alumnos"></ul>
+
+<script>
+async function cargarAlumnos() {
+    const res = await fetch("/api/alumnos");
+    const alumnos = await res.json();
+
+    let html = "";
+    alumnos.forEach(a => {
+        html += `<li><b>${a.nombre}</b></li>`;
+    });
+
+    document.getElementById("lista-alumnos").innerHTML = html;
+}
+
+window.onload = cargarAlumnos;
+</script>
+{% endblock %}

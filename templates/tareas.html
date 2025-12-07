@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h2>Tareas</h2>
+
+<div>
+  <h3>Selecciona alumnos</h3>
+  <div id="alumnos-list"></div>
+  <label><input type="checkbox" id="todos"> Asignar a todos</label>
+</div>
+
+<div>
+  <input id="titulo" placeholder="Título">
+  <textarea id="descripcion" placeholder="Descripción"></textarea>
+  <input id="fecha" type="date">
+  <select id="estatus">
+    <option value="pendiente">Pendiente</option>
+    <option value="en progreso">En progreso</option>
+    <option value="completada">Completada</option>
+  </select>
+  <button onclick="agregarTarea()">Agregar tarea</button>
+</div>
+
+<h3>Listado</h3>
+<table border="1" id="tabla-tareas">
+  <thead>
+    <tr>
+      <th>Título</th>
+      <th>Fecha</th>
+      <th>Descripción</th>
+      <th>Estatus</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+async function cargarAlumnos() {
+  const res = await fetch("/api/alumnos");
+  const alumnos = await res.json();
+  document.getElementById("alumnos-list").innerHTML =
+    alumnos.map(a => `
+      <label><input type="checkbox" name="alumno" value="${a.id}">${a.nombre}</label>
+    `).join("<br>");
+}
+
+function seleccionados() {
+  return Array.from(document.querySelectorAll('input[name="alumno"]:checked')).map(el => el.value);
+}
+
+async function agregarTarea() {
+  const body = {
+    titulo: document.getElementById("titulo").value,
+    descripcion: document.getElementById("descripcion").value,
+    fecha: document.getElementById("fecha").value,
+    estatus: document.getElementById("estatus").value,
+    alumno_ids: seleccionados(),
+    all: document.getElementById("todos").checked
+  };
+  const res = await fetch("/api/tareas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  alert(data.error ? data.error : `Tarea creada: ${data.tarea_id}`);
+  cargarTareas();
+}
+
+async function cargarTareas() {
+  const res = await fetch("/api/tareas");
+  const tareas = await res.json();
+  document.querySelector("#tabla-tareas tbody").innerHTML =
+    tareas.map(t => `
+      <tr>
+        <td><input value="${t.titulo}" id="t-${t.id}-titulo"></td>
+        <td><input type="date" value="${t.fecha || ''}" id="t-${t.id}-fecha"></td>
+        <td><textarea id="t-${t.id}-desc">${t.descripcion || ''}</textarea></td>
+        <td>
+          <select id="t-${t.id}-estatus">
+            <option ${t.estatus==='pendiente'?'selected':''} value="pendiente">Pendiente</option>
+            <option ${t.estatus==='en progreso'?'selected':''} value="en progreso">En progreso</option>
+            <option ${t.estatus==='completada'?'selected':''} value="completada">Completada</option>
+          </select>
+        </td>
+        <td>
+          <button onclick="editarTarea('${t.id}')">Guardar</button>
+          <button onclick="eliminarTarea('${t.id}')">Eliminar</button>
+        </td>
+      </tr>
+    `).join("");
+}
+
+async function editarTarea(id) {
+  const body = {
+    titulo: document.getElementById(`t-${id}-titulo`).value,
+    fecha: document.getElementById(`t-${id}-fecha`).value,
+    descripcion: document.getElementById(`t-${id}-desc`).value,
+    estatus: document.getElementById(`t-${id}-estatus`).value
+  };
+  const res = await fetch(`/api/tareas/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  alert(data.error ? data.error : "Tarea actualizada");
+  cargarTareas();
+}
+
+async function eliminarTarea(id) {
+  if (!confirm("¿Eliminar esta tarea? También se eliminarán notas asociadas.")) return;
+  const res = await fetch(`/api/tareas/${id}`, { method: "DELETE" });
+  const data = await res.json();
+  alert(data.error ? data.error : "Tarea eliminada");
+  cargarTareas();
+}
+
+window.onload = () => { cargarAlumnos(); cargarTareas(); };
+</script>
+{% endblock %}
