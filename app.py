@@ -15,13 +15,8 @@ from controllers.alumnos_controller import obtener_alumnos
 
 app = Flask(__name__)
 
-# -----------------------------
-#         VISTAS HTML
-# -----------------------------
-
 @app.route("/")
 def index():
-    # ✅ Ahora renderiza directamente base.html con el mensaje de bienvenida
     return render_template("base.html", current_year=2025)
 
 @app.route("/tareas")
@@ -44,17 +39,10 @@ def calendario():
 def alumnos():
     return render_template("alumnos.html", current_year=2025)
 
-# -----------------------------
-#         API: ALUMNOS
-# -----------------------------
-
 @app.route("/api/alumnos")
 def api_alumnos():
     return jsonify(obtener_alumnos())
 
-# -----------------------------
-#        API: TAREAS
-# -----------------------------
 
 @app.route("/api/tareas", methods=["GET"])
 def api_tareas():
@@ -89,9 +77,6 @@ def api_actualizar_tarea(id):
 def api_eliminar_tarea(id):
     return jsonify(eliminar_tarea(id))
 
-# -----------------------------
-#     API: RECORDATORIOS
-# -----------------------------
 
 @app.route("/api/recordatorios", methods=["GET"])
 def api_recordatorios():
@@ -122,10 +107,6 @@ def api_actualizar_recordatorio(id):
 def api_eliminar_recordatorio(id):
     return jsonify(eliminar_recordatorio(id))
 
-# -----------------------------
-#           API: NOTAS
-# -----------------------------
-
 @app.route("/api/notas", methods=["GET"])
 def api_notas():
     alumno_id = request.args.get("alumno_id")
@@ -140,15 +121,18 @@ def api_crear_nota():
         "valor": body.get("valor"),
         "comentario": body.get("comentario", "")
     }
-    return jsonify(crear_o_actualizar_nota(alumno_id, tarea_id, datos))
+    resultado = crear_o_actualizar_nota(alumno_id, tarea_id, datos)
+    # Añadimos un mensaje más claro
+    if "nota_id" in resultado:
+        resultado["mensaje"] = "Nota creada/actualizada correctamente"
+    return jsonify(resultado)
 
 @app.route("/api/notas/<id>", methods=["DELETE"])
 def api_eliminar_nota(id):
-    return jsonify(eliminar_nota(id))
-
-# -----------------------------
-#         API: EVENTOS
-# -----------------------------
+    resultado = eliminar_nota(id)
+    if "eliminado" in resultado:
+        resultado["mensaje"] = "Nota eliminada correctamente"
+    return jsonify(resultado)
 
 @app.route("/api/eventos", methods=["GET"])
 def api_eventos():
@@ -179,9 +163,6 @@ def api_actualizar_evento(id):
 def api_eliminar_evento(id):
     return jsonify(eliminar_evento(id))
 
-# -----------------------------
-#     EJECUCIÓN DE FLASK
-# -----------------------------
 
 if __name__ == "__main__":
     app.run(debug=True)

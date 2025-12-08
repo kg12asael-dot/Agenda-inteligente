@@ -25,12 +25,16 @@ async function cargarTabla() {
   const alumnos = await resAlumnos.json();
   const tareas = await resTareas.json();
 
-  // Opcional: obtener notas existentes para precargar campos
+  // Obtener notas existentes
   const resNotas = await fetch("/api/notas");
   const notas = await resNotas.json();
   const indexNotas = {};
   notas.forEach(n => {
-    indexNotas[`${n.alumno_id}-${n.tarea_id}`] = { valor: n.valor || "", comentario: n.comentario || "", id: n.id };
+    indexNotas[`${n.alumno_id}-${n.tarea_id}`] = {
+      valor: n.valor || "",
+      comentario: n.comentario || "",
+      id: n.id
+    };
   });
 
   let html = "";
@@ -71,7 +75,11 @@ async function guardarNota(alumno_id, tarea_id) {
     body: JSON.stringify({ alumno_id, tarea_id, valor, comentario })
   });
   const data = await res.json();
-  alert(data.error ? data.error : "Nota guardada");
+  if (data.error) {
+    alert("Error: " + data.error);
+  } else {
+    alert(data.mensaje || "Nota guardada correctamente");
+  }
   cargarTabla();
 }
 
@@ -79,7 +87,11 @@ async function eliminarNota(id) {
   if (!confirm("¿Eliminar esta nota?")) return;
   const res = await fetch(`/api/notas/${id}`, { method: "DELETE" });
   const data = await res.json();
-  alert(data.error ? data.error : "Nota eliminada");
+  if (data.error) {
+    alert("Error: " + data.error);
+  } else {
+    alert(data.mensaje || "Nota eliminada correctamente");
+  }
   cargarTabla();
 }
 

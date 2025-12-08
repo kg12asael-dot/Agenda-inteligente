@@ -31,7 +31,7 @@ def crear_o_actualizar_nota(alumno_id, tarea_id, datos):
        MERGE (n)-[:DE_TAREA]->(t)
        RETURN n',
       'SET n.valor=$valor, n.comentario=$comentario RETURN n',
-      {valor:$valor, comentario:$comentario, a:a, t:t, n:n}
+      {valor:$valor, comentario:$comentario}
     ) YIELD value
     RETURN value.n.id AS nota_id
     """
@@ -41,9 +41,15 @@ def crear_o_actualizar_nota(alumno_id, tarea_id, datos):
         "valor": datos.get("valor"),
         "comentario": datos.get("comentario", "")
     })
-    return {"nota_id": res[0]["nota_id"]} if res else {"error": "No se pudo crear/actualizar la nota"}
+    if res and len(res) > 0:
+        return {"nota_id": res[0]["nota_id"], "mensaje": "Nota creada/actualizada correctamente"}
+    else:
+        return {"error": "No se pudo crear/actualizar la nota"}
 
 def eliminar_nota(id):
     q = "MATCH (n:Nota {id:$id}) DETACH DELETE n RETURN $id AS eliminado"
     res = db.query(q, {"id": id})
-    return {"eliminado": res[0]["eliminado"]} if res else {"error": "Nota no encontrada"}
+    if res and len(res) > 0:
+        return {"eliminado": res[0]["eliminado"], "mensaje": "Nota eliminada correctamente"}
+    else:
+        return {"error": "Nota no encontrada"}
